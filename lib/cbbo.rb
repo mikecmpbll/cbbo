@@ -5,14 +5,10 @@ class Cbbo
     mod_adjuster: 0.25,
     domain: nil,
     precision: 4,
-    verbose: false
+    verbose: false,
+    max_iterations: 1_000_000,
+    noise: 0
   }
-
-# black_box = ->(vars){ (-vars[:x])**2 + 10 }
-# vars = { x: 0 }
-# mods = 0.1
-# Cbbo.optimise(black_box, vars, mods)
-
 
   def self.optimise(black_box, variables, mods, options = {})
     options = DEFAULT_OPTIONS.merge(options)
@@ -23,7 +19,7 @@ class Cbbo
       raise ArgumentError, "mods keys not same as starting vars keys"
     end
 
-    best = 0
+    best = 1.0/0
     last = 0
     num_cons = 0
     i = 0
@@ -34,7 +30,8 @@ class Cbbo
 
       var_before = variables[key]
       # force to conform to DOMAIN and PRECISION options?
-      variables[key] = variables[key].send(directions[key], mods[key])
+      mod = mods[key].send([:+, :-].sample, rand * (mods[key] * options[:noise]).fdiv(2))
+      variables[key] = variables[key].send(directions[key], mod)
 
       res = black_box.call(variables)
       puts "#{variables.inspect}: #{res}" if options[:verbose]
